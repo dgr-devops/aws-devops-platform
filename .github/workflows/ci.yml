@@ -1,0 +1,86 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    uses: dgr-devops/github-actions-reusable-workflows/.github/workflows/lint-python.yml@v1
+    with:
+      path: app
+
+  test:
+    uses: dgr-devops/github-actions-reusable-workflows/.github/workflows/test-python.yml@v1
+    with:
+      python-versions: '["3.12"]'
+      working-directory: app
+      install-command: python -m pip install -e ".[dev]"
+      coverage-target: app
+      coverage-threshold: 80
+
+  terraform:
+    uses: dgr-devops/github-actions-reusable-workflows/.github/workflows/terraform-check.yml@v1
+    with:
+      working-directory: terraform
+
+  terraform-bootstrap:
+    uses: dgr-devops/github-actions-reusable-workflows/.github/workflows/terraform-check.yml@v1
+    with:
+      working-directory: terraform/bootstrap
+
+  # Escaneo de configuración (IaC) con Trivy: falla con hallazgos MEDIUM o superiores.
+  trivy-config:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Trivy config
+        run: |
+          docker run --rm -v "$PWD:/src" aquasec/trivy:0.57.1 config \
+            --severity MEDIUM,HIGH,CRITICAL --exit-code 1 /src/terraform
+
+  monitoring:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: promtool (reglas y tests)
+        run: |
+          P="docker run --rm -v $PWD/monitoring/prometheus:/p --entrypoint promtool prom/prometheus:v2.55.1"
+          $P check rules /p/rules/api.yml
+          $P test rules /p/tests/api_test.yml
+
+  ansible:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Sintaxis y prueba en contenedor Debian (idempotencia)
+        run: ansible/tests/run-in-container.sh
+
+  # Construye, escanea con Trivy y publica en GHCR solo en main.
+  image:
+    needs: [lint, test]
+    uses: dgr-devops/github-actions-reusable-workflows/.github/workflows/docker-build-scan-push.yml@v1
+    with:
+      image-name: dgr-devops/aws-devops-platform
+      context: app
+      dockerfile: app/Dockerfile
+    permissions:
+      contents: read
+      packages: write

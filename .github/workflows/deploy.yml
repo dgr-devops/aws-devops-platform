@@ -1,0 +1,69 @@
+# ⚠️ NO EJECUTADO. Este workflow nunca se ha lanzado contra una cuenta de AWS real.
+# Es una plantilla: antes de usarlo hay que crear el rol OIDC en IAM y definir las variables
+# del repositorio AWS_ROLE_ARN y AWS_REGION (Settings > Secrets and variables > Variables).
+# No contiene ni usa claves de acceso: asume el rol mediante OIDC.
+name: Deploy (plantilla, no ejecutado)
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Acción de Terraform"
+        type: choice
+        options: [plan, apply]
+        default: plan
+      confirm:
+        description: 'Escribe "DESPLEGAR" para confirmar que entiendes que esto crea recursos en AWS'
+        type: string
+        required: true
+
+permissions:
+  contents: read
+  id-token: write # necesario para OIDC
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  terraform:
+    if: ${{ inputs.confirm == 'DESPLEGAR' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production # configura aprobadores obligatorios en este entorno
+    defaults:
+      run:
+        working-directory: terraform
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - uses: aws-actions/configure-aws-credentials@ff717079ee2060e4bcee96c4779b553acc87447c # v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3
+        with:
+          terraform_version: 1.9.8
+          terraform_wrapper: false
+
+      - name: terraform init (backend remoto)
+        env:
+          TF_BACKEND_BUCKET: ${{ vars.TF_BACKEND_BUCKET }}
+          TF_BACKEND_TABLE: ${{ vars.TF_BACKEND_TABLE }}
+        run: |
+          terraform init -input=false \
+            -backend-config="bucket=${TF_BACKEND_BUCKET}" \
+            -backend-config="key=aws-devops-platform/terraform.tfstate" \
+            -backend-config="region=${{ vars.AWS_REGION }}" \
+            -backend-config="dynamodb_table=${TF_BACKEND_TABLE}" \
+            -backend-config="encrypt=true"
+
+      - name: terraform plan
+        run: terraform plan -input=false -out=tfplan -var="region=${{ vars.AWS_REGION }}"
+
+      - name: terraform apply
+        if: ${{ inputs.action == 'apply' }}
+        run: terraform apply -input=false tfplan
