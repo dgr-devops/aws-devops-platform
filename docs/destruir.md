@@ -13,11 +13,12 @@ Recursos que desaparecen: instancia, perfil y rol IAM, flow logs y su log group,
 `create_budget=false`; el presupuesto se añade si está activo).
 
 ## 2. Stack de bootstrap (estado remoto) — al final
-Solo cuando ya no queda ningún stack que use el estado. El bucket está versionado: antes de destruirlo hay que vaciar todas las
-versiones, o `terraform destroy` fallará con `BucketNotEmpty`.
+Solo cuando ya no queda ningún stack que use el estado. El bucket está versionado: con objetos y versiones dentro, `terraform destroy` falla con
+`BucketNotEmpty` (comprobado en LocalStack). Hay que habilitar `force_destroy` antes y destruir después:
 ```bash
 cd terraform/bootstrap
-terraform destroy
+terraform apply -var force_destroy=true    # solo cambia el atributo del bucket
+terraform destroy -var force_destroy=true
 ```
 
 ## 3. Comprobación manual posterior
@@ -29,5 +30,6 @@ La destrucción se ha probado **solo contra LocalStack** (no contra AWS):
 scripts/localstack-test.sh bootstrap   # 5 creados, 5 destruidos
 scripts/localstack-test.sh main        # 25 creados, 25 destruidos
 ```
-Salida registrada en `docs/evidencias/`. LocalStack no reproduce el comportamiento de `BucketNotEmpty` con versiones reales,
-así que ese punto de la sección 2 **no está verificado**.
+Salida registrada en `docs/evidencias/`. Además se probó el caso del bucket versionado con dos versiones: `destroy` sin
+`force_destroy` falla con `BucketNotEmpty` y con `force_destroy=true` destruye los 5 recursos (`evidencias/localstack-bucket-no-vacio.txt`).
+Es LocalStack, no AWS: el comportamiento real no está verificado.

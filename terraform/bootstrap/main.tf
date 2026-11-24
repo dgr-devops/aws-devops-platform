@@ -23,6 +23,12 @@ variable "project" {
   default     = "devops-platform"
 }
 
+variable "force_destroy" {
+  description = "Permite destruir el bucket aunque contenga objetos y versiones (solo para teardown; ver docs/destruir.md)."
+  type        = bool
+  default     = false
+}
+
 provider "aws" {
   region = var.region
 
@@ -44,7 +50,8 @@ locals {
 # Sin log de acceso ni KMS propio: se documenta como decisión de coste en docs/decisiones.md.
 #trivy:ignore:AVD-AWS-0089
 resource "aws_s3_bucket" "state" {
-  bucket = local.bucket_name
+  bucket        = local.bucket_name
+  force_destroy = var.force_destroy
 
   lifecycle {
     prevent_destroy = false # true en un entorno real; false para poder probar la destrucción (docs/destruir.md)

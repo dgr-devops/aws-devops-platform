@@ -47,7 +47,7 @@ Pruebas de infraestructura (necesitan Docker; **no tocan AWS**):
 
 ```bash
 scripts/localstack-test.sh bootstrap && scripts/localstack-test.sh main   # apply + destroy en LocalStack
-ansible/tests/run-in-container.sh                                          # playbook en Debian 12, 2 pasadas
+ansible/tests/run-in-container.sh                                          # playbook en Debian 12, 2 pasadas (START_APP=1 despliega la app de verdad)
 scripts/firing-test.sh                                                     # alertas reales disparándose
 docker run --rm -v "$PWD/monitoring/prometheus:/p" --entrypoint promtool prom/prometheus:v2.55.1 test rules /p/tests/api_test.yml
 ```
@@ -73,13 +73,14 @@ Entorno de pruebas: Linux local con Docker. **Ninguna prueba usó una cuenta de 
 | Alertas disparándose | ✅ | [`firing-test.txt`](docs/evidencias/firing-test.txt): `ApiHigh5xxRate` (parando Postgres) y `ApiDown` (parando la API) llegan al webhook vía Alertmanager |
 | Terraform estático | ✅ | `fmt -check`, `validate` (principal y bootstrap), `tflint` y `trivy config`: sin hallazgos (algunos suprimidos con motivo, ver [decisiones](docs/decisiones.md)) |
 | Terraform apply/destroy | ⚠️ solo LocalStack | Bootstrap: 5 creados / 5 destruidos. Principal: 25 / 25 ([evidencias](docs/evidencias)). LocalStack Community no soporta Budgets (se prueba con `create_budget=false`) ni valida IAM/SG como AWS |
-| Ansible | ✅ en contenedor | Debian 12: 1ª pasada `changed=11`, 2ª `changed=0` ([evidencia](docs/evidencias/ansible-idempotencia.txt)). Sin systemd ni demonio Docker: no se probó arrancar servicios ni `docker compose up` desde Ansible |
-| Costes | ⚠️ parcial | Capa gratuita y tipos de instancia leídos en aws.amazon.com/free; **los precios no están verificados** ([costes](docs/costes.md)) |
+| Ansible | ✅ en contenedor | Debian 12: 1ª pasada `changed=11`, 2ª `changed=0` ([evidencia](docs/evidencias/ansible-idempotencia.txt)). Con `START_APP=1` el rol `app` despliega de verdad la imagen publicada en GHCR (pull anónimo, `/health` OK, 2ª pasada `changed=0`). Sin systemd: no se probó habilitar/arrancar servicios (`sshd`, `docker`) |
+| Imagen en GHCR | ✅ | `docker pull ghcr.io/dgr-devops/aws-devops-platform:latest` funciona sin credenciales (paquete público) |
+| Costes | ⚠️ parcial | Capa gratuita y tipos de instancia leídos en aws.amazon.com/free; NAT Gateway, IPv4 pública y gratuidad de Budgets leídos en las páginas de precios de AWS; el precio de EC2/EBS **no está verificado** ([costes](docs/costes.md)) |
 | CI en GitHub | ✅ | Los 8 jobs en verde en runners reales: ruff, pytest, terraform (×2), Trivy config, promtool, Ansible en contenedor y build + Trivy + push a GHCR en `main` |
 | `deploy.yml` | ❌ **no ejecutado** | Plantilla con OIDC; nunca lanzada, requiere un rol IAM que no existe |
 | `terraform apply` en AWS real | ❌ | No realizado (sin gasto en la nube) |
 | Instancia real, agente SSM, túnel SSM, AMI Debian | ❌ | Requieren una instancia real |
-| `BucketNotEmpty` al destruir el bucket versionado | ❌ | LocalStack no lo reproduce ([destruir.md](docs/destruir.md)) |
+| Destruir el bucket de estado versionado | ✅ solo LocalStack | `BucketNotEmpty` reproducido y resuelto con `force_destroy` ([evidencia](docs/evidencias/localstack-bucket-no-vacio.txt)); en AWS real, sin verificar |
 
 ## Seguridad
 

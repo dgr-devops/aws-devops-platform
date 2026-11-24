@@ -1,0 +1,6 @@
+# LocalStack 3.8, stack terraform/bootstrap, bucket versionado con 2 versiones de un objeto
+$ terraform destroy
+Error: deleting S3 Bucket (devops-platform-tfstate-000000000000): ... api error BucketNotEmpty: The bucket you tried to delete is not empty. You must delete all versions in the bucket.
+$ terraform apply -var force_destroy=true && terraform destroy -var force_destroy=true
+Apply complete! Resources: 4 added, 1 changed, 0 destroyed.
+Destroy complete! Resources: 5 destroyed.

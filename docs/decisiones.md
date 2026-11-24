@@ -6,10 +6,10 @@ Formato: contexto → decisión → alternativa descartada.
 El security group de la instancia **no tiene reglas de entrada**. La shell y el acceso a la API (puerto 8000) van por túnel
 de AWS Systems Manager (`AWS-StartSSHSession` / `AWS-StartPortForwardingSession`), autenticado con IAM.
 *Descartado:* abrir el 22 a mi IP (cambia con frecuencia, y una regla olvidada es un riesgo) y un bastión (coste y más superficie).
-Consecuencia: la API no es pública. Para exponerla habría que añadir un ALB (≈16 USD/mes, fuera del presupuesto).
+Consecuencia: la API no es pública. Para exponerla habría que añadir un ALB (coste adicional, fuera del presupuesto).
 
 ## 2. Sin NAT Gateway
-Un NAT Gateway cuesta del orden de 30 USD/mes más tráfico (cifra a confirmar en la calculadora de AWS). La instancia va en subred
+Un NAT Gateway cuesta 0,045 USD/h (≈ 33 USD/mes) más 0,045 USD/GB procesado, según la página de precios de VPC. La instancia va en subred
 pública con IP pública **solo para salida**; la entrada sigue cerrada. Las subredes privadas existen (sin ruta a Internet) para una
 futura RDS. Los hallazgos de Trivy `AVD-AWS-0164` (IP pública) y `AVD-AWS-0104` (egress 0.0.0.0/0) están suprimidos con comentario
 `#trivy:ignore` en el código por este motivo; el egress se limita a 80/443 y DNS de la VPC.
