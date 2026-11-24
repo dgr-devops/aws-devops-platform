@@ -1,0 +1,5 @@
+>> Provocando 5xx: parando db y generando tráfico
+webhook-1  | [webhook/warning] status=firing alertname=ApiHigh5xxRate severity=warning instance=None
+>> Provocando caída: parando api
+webhook-1  | [webhook/critical] status=firing alertname=ApiDown severity=critical instance=api:8000
+>> OK: ambas alertas llegaron al receptor
