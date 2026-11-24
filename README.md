@@ -75,7 +75,7 @@ Entorno de pruebas: Linux local con Docker. **Ninguna prueba usó una cuenta de 
 | Terraform apply/destroy | ⚠️ solo LocalStack | Bootstrap: 5 creados / 5 destruidos. Principal: 25 / 25 ([evidencias](docs/evidencias)). LocalStack Community no soporta Budgets (se prueba con `create_budget=false`) ni valida IAM/SG como AWS |
 | Ansible | ✅ en contenedor | Debian 12: 1ª pasada `changed=11`, 2ª `changed=0` ([evidencia](docs/evidencias/ansible-idempotencia.txt)). Sin systemd ni demonio Docker: no se probó arrancar servicios ni `docker compose up` desde Ansible |
 | Costes | ⚠️ parcial | Capa gratuita y tipos de instancia leídos en aws.amazon.com/free; **los precios no están verificados** ([costes](docs/costes.md)) |
-| CI en GitHub | ver abajo | Se actualiza tras la primera ejecución real |
+| CI en GitHub | ✅ | Los 8 jobs en verde en runners reales: ruff, pytest, terraform (×2), Trivy config, promtool, Ansible en contenedor y build + Trivy + push a GHCR en `main` |
 | `deploy.yml` | ❌ **no ejecutado** | Plantilla con OIDC; nunca lanzada, requiere un rol IAM que no existe |
 | `terraform apply` en AWS real | ❌ | No realizado (sin gasto en la nube) |
 | Instancia real, agente SSM, túnel SSM, AMI Debian | ❌ | Requieren una instancia real |
