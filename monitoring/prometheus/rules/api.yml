@@ -1,0 +1,23 @@
+groups:
+  - name: api
+    rules:
+      - alert: ApiDown
+        expr: up{job="api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "La API {{ $labels.instance }} no responde"
+          description: "Prometheus no puede scrapear {{ $labels.instance }} desde hace más de 1 minuto."
+
+      - alert: ApiHigh5xxRate
+        expr: |
+          sum by (job) (rate(http_requests_total{job="api", status=~"5.."}[5m]))
+            / sum by (job) (rate(http_requests_total{job="api"}[5m])) > 0.05
+          and sum by (job) (rate(http_requests_total{job="api"}[5m])) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Más del 5 % de respuestas 5xx en la API"
+          description: "Ratio de 5xx: {{ $value | humanizePercentage }} en los últimos 5 minutos."

@@ -1,0 +1,48 @@
+rule_files:
+  - ../rules/api.yml
+
+evaluation_interval: 1m
+
+tests:
+  # ApiDown: up=0 durante >1m dispara; con up=1 no.
+  - interval: 1m
+    input_series:
+      - series: 'up{job="api", instance="api:8000"}'
+        values: "1 1 0 0 0 0 1 1"
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: ApiDown
+        exp_alerts: []
+      - eval_time: 4m
+        alertname: ApiDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              job: api
+              instance: "api:8000"
+            exp_annotations:
+              summary: "La API api:8000 no responde"
+              description: "Prometheus no puede scrapear api:8000 desde hace más de 1 minuto."
+      - eval_time: 7m
+        alertname: ApiDown
+        exp_alerts: []
+
+  # ApiHigh5xxRate: 10 req/s en total, 20 % 5xx (2 req/s) -> dispara; 1 % -> no.
+  - interval: 1m
+    input_series:
+      - series: 'http_requests_total{job="api", status="200"}'
+        values: "0+480x15"
+      - series: 'http_requests_total{job="api", status="500"}'
+        values: "0+120x15"
+      - series: 'http_requests_total{job="ok", status="200"}'
+        values: "0+600x15"
+    alert_rule_test:
+      - eval_time: 12m
+        alertname: ApiHigh5xxRate
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              job: api
+            exp_annotations:
+              summary: "Más del 5 % de respuestas 5xx en la API"
+              description: "Ratio de 5xx: 20% en los últimos 5 minutos."
