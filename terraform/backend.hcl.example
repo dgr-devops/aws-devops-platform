@@ -1,0 +1,6 @@
+# Copia a backend.hcl (ignorado por git) y ajusta con los outputs de terraform/bootstrap.
+bucket         = "CAMBIA-ME-tfstate-<account-id>"
+key            = "aws-devops-platform/terraform.tfstate"
+region         = "eu-west-1"
+dynamodb_table = "CAMBIA-ME-tflock"
+encrypt        = true
