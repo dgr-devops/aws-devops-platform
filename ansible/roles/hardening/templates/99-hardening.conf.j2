@@ -1,0 +1,4 @@
+# Gestionado por Ansible (rol hardening)
+{% for key, value in hardening_sysctl.items() %}
+{{ key }} = {{ value }}
+{% endfor %}

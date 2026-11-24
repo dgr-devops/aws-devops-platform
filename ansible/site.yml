@@ -1,0 +1,11 @@
+---
+- name: Bastionado, Docker y despliegue de la aplicación
+  hosts: all
+  become: true
+  roles:
+    - role: hardening
+      tags: [hardening]
+    - role: docker
+      tags: [docker]
+    - role: app
+      tags: [app]

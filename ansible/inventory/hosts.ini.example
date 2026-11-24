@@ -1,0 +1,11 @@
+# No hay SSH abierto al mundo: se entra por un túnel SSM (ver docs/decisiones.md).
+# Antes: asocia una clave a la instancia (EC2 Instance Connect o authorized_keys vía SSM)
+# y añade en ~/.ssh/config:
+#   Host i-* mi-*
+#     ProxyCommand sh -c "aws ssm start-session --target %h --document-name AWS-StartSSHSession --parameters 'portNumber=%p'"
+[app]
+i-0123456789abcdef0 ansible_user=admin
+
+[app:vars]
+# Genera el secreto con ansible-vault; nunca lo escribas en claro en el repo.
+# app_db_password=...

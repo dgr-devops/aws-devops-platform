@@ -1,0 +1,53 @@
+---
+- name: Instalar OpenSSH y actualizaciones desatendidas
+  ansible.builtin.apt:
+    name: [openssh-server, unattended-upgrades]
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Crear el directorio de privilegios separados de sshd
+  ansible.builtin.file:
+    path: /run/sshd
+    state: directory
+    mode: "0755"
+
+- name: Crear el directorio de configuración adicional de sshd
+  ansible.builtin.file:
+    path: /etc/ssh/sshd_config.d
+    state: directory
+    mode: "0755"
+
+- name: Endurecer sshd (drop-in)
+  ansible.builtin.copy:
+    dest: /etc/ssh/sshd_config.d/10-hardening.conf
+    content: |
+      PermitRootLogin no
+      PasswordAuthentication no
+      KbdInteractiveAuthentication no
+      MaxAuthTries 3
+      X11Forwarding no
+      AllowAgentForwarding no
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Recargar sshd
+
+- name: Parámetros de kernel (sysctl)
+  ansible.builtin.template:
+    src: 99-hardening.conf.j2
+    dest: /etc/sysctl.d/99-hardening.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Aplicar sysctl
+
+- name: Activar las actualizaciones automáticas de seguridad
+  ansible.builtin.copy:
+    dest: /etc/apt/apt.conf.d/20auto-upgrades
+    content: |
+      APT::Periodic::Update-Package-Lists "1";
+      APT::Periodic::Unattended-Upgrade "1";
+    owner: root
+    group: root
+    mode: "0644"

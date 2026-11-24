@@ -1,0 +1,38 @@
+---
+- name: Exigir la contraseña de la base de datos
+  ansible.builtin.assert:
+    that: app_db_password | length >= 12
+    fail_msg: "Define app_db_password (>= 12 caracteres) con ansible-vault."
+    quiet: true
+
+- name: Directorio de la aplicación
+  ansible.builtin.file:
+    path: "{{ app_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+
+- name: Fichero de entorno (secretos)
+  ansible.builtin.template:
+    src: env.j2
+    dest: "{{ app_dir }}/.env"
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+
+- name: Compose de producción
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ app_dir }}/docker-compose.yml"
+    owner: root
+    group: root
+    mode: "0640"
+
+- name: Levantar la aplicación
+  community.docker.docker_compose_v2:
+    project_src: "{{ app_dir }}"
+    pull: missing
+    state: present
+  when: app_start | bool

@@ -1,0 +1,8 @@
+---
+app_dir: /opt/devops-platform
+app_image: ghcr.io/dgr-devops/aws-devops-platform
+app_image_tag: latest
+# Obligatoria: pásala con ansible-vault (-e @secrets.yml). No hay valor por defecto a propósito.
+app_db_password: ""
+# false en las pruebas en contenedor (no hay demonio Docker); true en el servidor real.
+app_start: true

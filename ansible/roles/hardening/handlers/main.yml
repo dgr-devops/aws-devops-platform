@@ -1,0 +1,12 @@
+---
+# Los handlers solo actúan si hay systemd (en el contenedor de pruebas no lo hay).
+- name: Recargar sshd
+  ansible.builtin.service:
+    name: ssh
+    state: reloaded
+  when: ansible_service_mgr == "systemd"
+
+- name: Aplicar sysctl
+  ansible.builtin.command: sysctl --system
+  changed_when: true
+  when: ansible_service_mgr == "systemd"
