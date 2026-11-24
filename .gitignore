@@ -16,3 +16,4 @@ crash.log
 *.retry
 # Otros
 .DS_Store
+*.egg-info/
